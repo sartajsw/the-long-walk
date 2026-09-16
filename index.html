@@ -2,427 +2,1652 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#111827">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>El Camino 50K Tracker</title>
+  
+  <!-- iOS PWA Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>El Camino 42M Trekker</title>
-  
-  <!-- Embedded PWA Manifest -->
-  <link rel="manifest" href="data:application/manifest+json;utf-8,%7B%22name%22%3A%22El%20Camino%20Trekker%22%2C%22short_name%22%3A%22EC-Trek%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23111827%22%2C%22theme_color%22%3A%22%2310b981%22%7D">
+  <meta name="apple-mobile-web-app-title" content="El Camino 50K">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
 
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --accent: #10b981;
-      --accent-warn: #f59e0b;
-      --accent-danger: #ef4444;
+      --bg: #0b0f19;
+      --card-bg: #151d30;
+      --card-border: #1e293b;
       --text: #f8fafc;
       --text-muted: #94a3b8;
-      --border: #334155;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --water: #38bdf8;
+      --fuel: #fbbf24;
+      --foot: #ec4899;
+      --transit: #a855f7;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; -webkit-tap-highlight-color: transparent; }
-    
+    body.amoled-mode {
+      --bg: #000000;
+      --card-bg: #09090b;
+      --card-border: #27272a;
+      --text: #e4e4e7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: env(safe-area-inset-top, 16px) 14px env(safe-area-inset-bottom, 20px) 14px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.2s;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+      padding-bottom: 50px;
+    }
+
+    /* Header */
     header {
-      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-      padding: 20px 16px 16px;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .title-row { display: flex; justify-content: space-between; align-items: center; }
-    h1 { font-size: 1.25rem; font-weight: 700; color: #fff; }
-    .status-badge {
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #374151;
-      color: #9ca3af;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    .status-badge.active { background: #064e3b; color: #34d399; }
-
-    .container { padding: 16px; display: flex; flex-direction: column; gap: 16px; max-width: 600px; margin: 0 auto; }
-
-    .btn {
-      background: var(--accent);
-      color: #064e3b;
-      font-weight: 700;
-      font-size: 1.1rem;
-      border: none;
-      border-radius: 12px;
-      padding: 16px;
-      width: 100%;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-      transition: all 0.15s ease;
-    }
-    .btn:active { transform: scale(0.98); }
-    .btn-stop { background: var(--accent-danger); color: #fff; }
-
-    /* Key Metrics Grid */
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .card-full { grid-column: span 2; }
-    .label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
-    .val { font-size: 1.7rem; font-weight: 800; color: #fff; line-height: 1.1; }
-    .sub { font-size: 0.8rem; color: var(--text-muted); }
-
-    /* Progress Bar */
-    .progress-track {
-      background: #334155;
-      height: 10px;
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 8px;
-    }
-    .progress-fill {
-      background: var(--accent);
-      height: 100%;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-
-    /* Timers / Scientific Cadence */
-    .timer-row {
+      padding: 12px 0 10px 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(15, 23, 42, 0.6);
-      padding: 10px 12px;
-      border-radius: 10px;
-      border-left: 4px solid var(--accent);
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 14px;
     }
-    .timer-row.warn { border-left-color: var(--accent-warn); }
-    .timer-title { font-weight: 600; font-size: 0.9rem; }
-    .timer-cd { font-family: monospace; font-size: 1rem; font-weight: 700; color: #38bdf8; }
 
-    /* Stops List */
-    .stop-item {
+    .header-title h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 12px;
-      background: rgba(15, 23, 42, 0.4);
-      border-radius: 10px;
-      margin-top: 8px;
-      border: 1px solid #334155;
+      align-items: center;
+      gap: 6px;
     }
-    .stop-header { display: flex; justify-content: space-between; align-items: baseline; }
-    .stop-name { font-weight: 700; font-size: 0.95rem; color: #f1f5f9; }
-    .stop-mile { font-size: 0.8rem; color: #38bdf8; font-weight: 600; }
-    .stop-tag { font-size: 0.78rem; color: #cbd5e1; }
-    .stop-hours { font-size: 0.72rem; color: #94a3b8; }
 
-    .protocol-card {
-      background: #1e1b4b;
-      border: 1px solid #4338ca;
+    .header-title p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-status-box {
+      text-align: right;
+    }
+
+    .live-clock {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sunset-indicator {
+      font-size: 0.7rem;
+      color: var(--warning);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       border-radius: 14px;
       padding: 14px;
-      font-size: 0.85rem;
-      line-height: 1.4;
-      color: #c7d2fe;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
-    .protocol-card h3 { font-size: 0.95rem; color: #fff; margin-bottom: 6px; }
+
+    .start-banner {
+      background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+      border: 1px solid #3b82f6;
+    }
+    body.amoled-mode .start-banner {
+      background: #09090b;
+      border-color: #3b82f6;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:active { background: var(--accent-hover); transform: scale(0.98); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-warning { background: var(--warning); color: #000; font-weight: 700; }
+    .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text); }
+    .btn-outline:active { background: rgba(255,255,255,0.05); }
+    .btn-danger-outline { background: transparent; border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-size: 0.8rem; padding: 6px 10px; }
+    .btn-sm { padding: 6px 10px; font-size: 0.8rem; border-radius: 8px; }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .metric-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 4px;
+      text-align: center;
+    }
+
+    .metric-box .label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .metric-box .value {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Controls Row */
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--card-border);
+      padding: 6px 10px;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .toggle-chip.active {
+      background: rgba(59, 130, 246, 0.25);
+      border-color: var(--accent);
+      color: #93c5fd;
+    }
+
+    /* In-App Alert Banner */
+    #alertBanner {
+      display: none;
+      position: fixed;
+      top: env(safe-area-inset-top, 14px);
+      left: 14px;
+      right: 14px;
+      max-width: 532px;
+      margin: 0 auto;
+      background: #18181b;
+      border: 2px solid var(--warning);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85);
+      z-index: 9999;
+      animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .alert-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .alert-title {
+      font-weight: 800;
+      color: var(--warning);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1rem;
+    }
+
+    .alert-body {
+      font-size: 0.85rem;
+      color: #f1f5f9;
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .alert-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Fuel & Hydration Grid */
+    .counters-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .counter-box {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+    }
+
+    .counter-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .counter-val {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin: 4px 0;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+    }
+
+    .counter-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    /* Transit Bailout Box */
+    .bailout-card {
+      background: linear-gradient(135deg, #2e1065 0%, #1e1b4b 100%);
+      border: 1px solid var(--transit);
+    }
+    body.amoled-mode .bailout-card {
+      background: #09090b;
+      border-color: var(--transit);
+    }
+
+    .bailout-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .bailout-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #d8b4fe;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bailout-content {
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      line-height: 1.45;
+    }
+
+    /* Tab Filter Pills */
+    .tabs-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .tab-pill {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .tab-pill.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Timeline Items */
+    .stop-item {
+      position: relative;
+      padding-left: 24px;
+      padding-bottom: 18px;
+      border-left: 2px solid #334155;
+    }
+
+    .stop-item:last-child {
+      border-left: 2px transparent;
+      padding-bottom: 0;
+    }
+
+    .stop-node {
+      position: absolute;
+      left: -8px;
+      top: 0;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #334155;
+      border: 2px solid var(--bg);
+    }
+
+    .stop-item.completed .stop-node { background: var(--success); }
+    .stop-item.near .stop-node { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
+    .stop-item.restroom-type .stop-node { background: #06b6d4; }
+
+    .stop-content {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .stop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+
+    .stop-name {
+      font-size: 0.95rem;
+      font-weight: 750;
+      color: #f1f5f9;
+    }
+
+    .stop-mile {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #1e293b;
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: #38bdf8;
+      white-space: nowrap;
+    }
+
+    .stop-eta {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .stop-addr {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .stop-primary-food {
+      font-size: 0.8rem;
+      color: #f8fafc;
+      background: rgba(59, 130, 246, 0.12);
+      border-left: 3px solid var(--accent);
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+
+    .alt-toggle-btn {
+      background: transparent;
+      border: none;
+      color: #93c5fd;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 0;
+      margin-bottom: 6px;
+    }
+
+    .alternatives-container {
+      display: none;
+      background: rgba(0,0,0,0.4);
+      border: 1px dashed var(--card-border);
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .alt-item {
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.76rem;
+    }
+    .alt-item:last-child { border-bottom: none; }
+    .alt-name { font-weight: 700; color: #e2e8f0; display: flex; justify-content: space-between; }
+    .alt-desc { color: var(--text-muted); margin-top: 2px; }
+
+    .stop-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .badge-order {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .btn-link {
+      color: #93c5fd;
+      font-size: 0.75rem;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 4px 8px;
+      background: #1e293b;
+      border-radius: 6px;
+    }
+
+    .stop-check-btn {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: auto;
+    }
+
+    .stop-check-btn.checked {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: #6ee7b7;
+    }
+
+    /* Warning Banner Box */
+    .warning-box {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.75rem;
+      color: #fef08a;
+      margin-top: 8px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="title-row">
-      <div>
-        <h1>El Camino Trekker</h1>
-        <div style="font-size:0.75rem; color:var(--text-muted);">100 Goethe St ➔ Santa Clara (~42 mi)</div>
-      </div>
-      <div id="gps-badge" class="status-badge">GPS Standby</div>
+  <!-- Screen-Active In-App Alert Banner -->
+  <div id="alertBanner">
+    <div class="alert-header">
+      <span class="alert-title" id="alertTitle">🔔 Reminder</span>
+      <button class="btn btn-sm btn-outline" style="padding: 2px 8px;" onclick="dismissAlert()">✕</button>
     </div>
-  </header>
-
-  <div class="container">
-    <button id="toggle-btn" class="btn" onclick="toggleTrek()">Start Walk</button>
-
-    <!-- Overall Route Progress -->
-    <div class="card card-full">
-      <div style="display:flex; justify-content:space-between;">
-        <span class="label">Total Route Completed</span>
-        <span id="pct-display" class="label" style="color:var(--accent);">0%</span>
-      </div>
-      <div class="progress-track">
-        <div id="progress-bar" class="progress-fill"></div>
-      </div>
-      <div style="display:flex; justify-content:space-between; margin-top:6px;">
-        <span class="sub" id="dist-covered">0.00 mi completed</span>
-        <span class="sub" id="dist-remaining">42.0 mi remaining</span>
-      </div>
-    </div>
-
-    <!-- Live Telemetry -->
-    <div class="grid">
-      <div class="card">
-        <span class="label">Moving Speed</span>
-        <div class="val" id="speed-val">0.0 <span style="font-size:1rem; font-weight:400;">mph</span></div>
-        <span class="sub" id="pace-val">Target: 3.0 mph</span>
-      </div>
-
-      <div class="card">
-        <span class="label">Estimated Arrival</span>
-        <div class="val" id="eta-val">--:--</div>
-        <span class="sub" id="elapsed-time">Elapsed: 00:00</span>
-      </div>
-    </div>
-
-    <!-- Science Cadence Timers -->
-    <div class="card card-full" style="gap:10px;">
-      <span class="label">Physiology & Nutrition Schedule</span>
-
-      <div class="timer-row">
-        <div>
-          <div class="timer-title">Hydration & Electrolytes</div>
-          <div class="sub">Take 3-4 sips (~150 mL)</div>
-        </div>
-        <div id="timer-water" class="timer-cd">15:00</div>
-      </div>
-
-      <div class="timer-row">
-        <div>
-          <div class="timer-title">Solid Carb Nibble</div>
-          <div class="sub">150–250 kcal (savory or snack)</div>
-        </div>
-        <div id="timer-food" class="timer-cd">45:00</div>
-      </div>
-
-      <div class="timer-row warn">
-        <div>
-          <div class="timer-title">Elevate Feet (Venous Reset)</div>
-          <div class="sub">5-min elevation every ~10 miles</div>
-        </div>
-        <div id="timer-rest" class="timer-cd">-- mi to go</div>
-      </div>
-    </div>
-
-    <!-- Upcoming Vegetarian Stops along El Camino -->
-    <div class="card card-full">
-      <span class="label">Verified Vegetarian Grab & Go Stops</span>
-      <div id="stops-container">
-        <!-- Rendered via JS -->
-      </div>
-    </div>
-
-    <!-- Evidence-Based Tips Card -->
-    <div class="protocol-card">
-      <h3>Ultramarathon Care Protocol</h3>
-      <p>• <strong>Blister Prevention:</strong> Address friction immediately. Use paper tape / hydrocolloid before hot spots tear.</p>
-      <p>• <strong>Sock Rotations:</strong> Fresh, dry socks at Mile 15 (San Mateo) and Mile 30 (Palo Alto) significantly lower shear friction.</p>
-      <p>• <strong>Avoid Long Sits:</strong> Resting longer than 10 minutes leads to muscle stiffening and heavy restart inertia.</p>
+    <div class="alert-body" id="alertMessage">Time to hydrate or fuel up!</div>
+    <div class="alert-actions" id="alertActions">
+      <button class="btn btn-sm btn-success" id="alertPrimaryBtn" onclick="dismissAlert()">Acknowledge</button>
+      <button class="btn btn-sm btn-outline" onclick="snoozeAlert(10)">Snooze 10m</button>
     </div>
   </div>
 
-  <script>
-    const TOTAL_ROUTE_MILES = 42.0;
-    const START_LAT = 37.7081;
-    const START_LNG = -122.4633;
-    const DEST_LAT = 37.3541;
-    const DEST_LNG = -121.9552;
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="header-title">
+        <h1>🚶 El Camino 50K</h1>
+        <p>San Francisco ➔ Santa Clara • CA-82</p>
+      </div>
+      <div class="header-status-box">
+        <div class="live-clock" id="liveClock">--:--:--</div>
+        <div class="sunset-indicator" id="sunsetIndicator">🌅 Sunset: ~7:09 PM</div>
+      </div>
+    </header>
 
-    const STOPS = [
-      { name: "Royal Pin Donuts", town: "South San Francisco", mile: 5.5, veg: "Egg/Cheese Bagels, Fresh Donuts, Coffee", hours: "Opens 4:00 AM" },
-      { name: "Little Lucca", town: "Burlingame", mile: 13.5, veg: "Veggie Delight on Dutch Crunch, Hot Cheese Subs", hours: "Opens 9:00 AM" },
-      { name: "S El Camino Taqueria", town: "San Mateo", mile: 18.5, veg: "Super Veggie Burritos, Cheese & Guac Quesadillas", hours: "Opens 10:00 AM" },
-      { name: "Los Carnalitos", town: "Redwood City", mile: 26.0, veg: "Mexico City Veggie Tacos, Gorditas, Burritos", hours: "Opens 10:00 AM" },
-      { name: "Driftwood Deli & Market", town: "Palo Alto", mile: 32.2, veg: "Custom Veggie Deli Subs, Cold Beverages, Trail Snacks", hours: "Opens 9:00 AM" },
-      { name: "Sourdough Bread Co", town: "Sunnyvale", mile: 38.5, veg: "Caprese Sandwiches, Veggie Baguettes, Mac & Cheese", hours: "Opens 10:00 AM" },
-      { name: "Nick the Greek", town: "Santa Clara", mile: 41.5, veg: "Falafel Pita Wraps, Greek Fries, Veggie Gyros", hours: "Opens 11:00 AM" }
+    <!-- Main Controls & Metrics Card -->
+    <div class="card start-banner">
+      <div id="notStartedView">
+        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">
+          Ready to set off along El Camino Real? Start the walk to capture your live departure time and initiate all dynamic ETAs, food ordering windows, and hydration pacing.
+        </p>
+        <button class="btn btn-primary" style="width: 100%; font-size: 1.05rem;" onclick="startWalk()">
+          ▶ Start Walk (Check Live Time)
+        </button>
+        <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px;">
+          <label style="font-size: 0.75rem; color: #cbd5e1;">Manual Start:</label>
+          <input type="time" id="manualStartTimeInput" style="background: #0f172a; border: 1px solid #334155; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
+          <button class="btn btn-sm btn-outline" onclick="startWalkManual()">Set</button>
+        </div>
+      </div>
+
+      <div id="activeWalkView" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <span style="font-size: 0.7rem; text-transform: uppercase; color: #38bdf8; font-weight: 800; letter-spacing: 0.5px;">Active Walk</span>
+            <div id="walkStartDisplay" style="font-size: 0.85rem; color: #e2e8f0; font-weight: 700;">Started: --:--</div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-sm btn-primary" style="padding: 5px 9px;" onclick="shareCheckin()">📢 Check-in</button>
+            <button class="btn btn-danger-outline" onclick="resetWalk()">Reset</button>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="label">Elapsed</div>
+            <div class="value" id="elapsedDisplay">00:00:00</div>
+          </div>
+          <div class="metric-box">
+            <div class="label">Distance</div>
+            <div class="value" id="distanceDisplay">0.0 mi</div>
+          </div>
+          <div class="metric-box">
+            <div class="label">Target Pace</div>
+            <div class="value" id="paceDisplay">3.2 mph</div>
+          </div>
+          <div class="metric-box">
+            <div class="label">Est. Finish</div>
+            <div class="value" id="finishDisplay">--:--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toggles Row -->
+      <div class="controls-row">
+        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+          <button id="wakeLockBtn" class="toggle-chip" onclick="toggleWakeLock()">
+            💡 Screen Wake: OFF
+          </button>
+          <button id="soundBtn" class="toggle-chip active" onclick="toggleSound()">
+            🔊 Chimes: ON
+          </button>
+          <button id="amoledBtn" class="toggle-chip" onclick="toggleAmoled()">
+            🔋 OLED Dark: OFF
+          </button>
+          <button id="gpsBtn" class="toggle-chip" onclick="toggleGps()">
+            🛰️ GPS: OFF
+          </button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 6px; border: 1px solid var(--card-border);">
+          <label style="font-size: 0.72rem; color: var(--text-muted);">Pace:</label>
+          <select id="paceSelect" onchange="changePace(this.value)" style="background: transparent; color: #fff; border: none; font-weight: 700; font-size: 0.8rem; outline: none;">
+            <option value="2.8">2.8 mph (21m/mi)</option>
+            <option value="3.0">3.0 mph (20m/mi)</option>
+            <option value="3.2" selected>3.2 mph (18.7m/mi)</option>
+            <option value="3.5">3.5 mph (17m/mi)</option>
+            <option value="3.8">3.8 mph (15.7m/mi)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hydration, Electrolytes & Footcare Card -->
+    <div class="card">
+      <div class="counters-grid">
+        <!-- Water -->
+        <div class="counter-box">
+          <div class="counter-label" style="color: var(--water);">💧 Water (<span id="waterCount">0</span>)</div>
+          <div class="counter-val" id="waterCountdown">30:00</div>
+          <div class="counter-sub" id="waterSub">Every 30m</div>
+          <button class="btn btn-sm btn-outline" style="border-color: var(--water); color: var(--water);" onclick="logWater()">+ Drink</button>
+        </div>
+
+        <!-- Electrolytes -->
+        <div class="counter-box">
+          <div class="counter-label" style="color: var(--fuel);">⚡ Salts (<span id="electrolyteCount">0</span>)</div>
+          <div class="counter-val" id="electrolyteVal">0 pkts</div>
+          <div class="counter-sub">Ratio Balance</div>
+          <button class="btn btn-sm btn-outline" style="border-color: var(--fuel); color: var(--fuel);" onclick="logElectrolyte()">+ Salt/Elec</button>
+        </div>
+
+        <!-- Fuel / Snack -->
+        <div class="counter-box">
+          <div class="counter-label" style="color: #f43f5e;">🍴 Fuel (<span id="fuelCount">0</span>)</div>
+          <div class="counter-val" id="fuelCountdown">60:00</div>
+          <div class="counter-sub" id="fuelSub">Every 60m</div>
+          <button class="btn btn-sm btn-outline" style="border-color: #f43f5e; color: #f43f5e;" onclick="logFuel()">+ Snack</button>
+        </div>
+      </div>
+
+      <!-- Warning if 3 waters with 0 electrolytes -->
+      <div id="hyponatremiaWarning" class="warning-box">
+        ⚠️ <strong>Hydration Alert:</strong> You've logged multiple water bottles without electrolytes. Take a salt tablet or drink an electrolyte mix to prevent cramping/hyponatremia.
+      </div>
+
+      <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.72rem; color: var(--text-muted);" id="footCheckStatus">Next Foot Check: Mile 15.0</span>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.7rem; padding: 3px 8px;" onclick="testChime()">🔔 Test Audio</button>
+      </div>
+    </div>
+
+    <!-- Live Transit & Bailout Navigator -->
+    <div class="card bailout-card">
+      <div class="bailout-header">
+        <span class="bailout-title">🚆 Live Transit & Bailout Navigator</span>
+        <span style="font-size: 0.7rem; color: #c084fc; font-weight: 700;" id="activeBusRoute">Bus: SamTrans ECR</span>
+      </div>
+      <div class="bailout-content" id="bailoutInfo">
+        Start the walk to see live distance to the nearest Caltrain station and parallel bus routes along El Camino Real.
+      </div>
+    </div>
+
+    <!-- Checkpoint & Food Stops Timeline -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.95rem; font-weight: 800;">Stops & Milestones (48.5 Mi)</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);" id="stopsProgress">0/12 Reached</span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs-row">
+        <button class="tab-pill active" onclick="filterTimeline('all', this)">All Checkpoints</button>
+        <button class="tab-pill" onclick="filterTimeline('food', this)">Grab & Go Food</button>
+        <button class="tab-pill" onclick="filterTimeline('restroom', this)">Restrooms & Water</button>
+      </div>
+
+      <div id="stopsContainer">
+        <!-- Injected dynamically via JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- Database of Stops, Food Alternatives, Restrooms & Caltrain ---
+    const STOPS_DATA = [
+      {
+        id: 0,
+        type: 'food',
+        mile: 0.0,
+        city: "San Francisco",
+        name: "Start: SF / Daly City Border",
+        address: "Mission St & San Jose Ave / CA-82",
+        primaryFood: "Starting line. Final check: gear, water bottles filled, tracker started.",
+        phone: null,
+        url: null,
+        restroom: "BART / Muni station nearby",
+        alternatives: []
+      },
+      {
+        id: 1,
+        type: 'food',
+        mile: 4.5,
+        city: "Colma / South SF",
+        name: "Piccolo Spuntino",
+        address: "7687 El Camino Real, Colma",
+        primaryFood: "Artisan espresso, Mexican mochas, and freshly baked sweet breads.",
+        phone: "+16507574812",
+        url: "https://www.google.com/maps/search/?api=1&query=Piccolo+Spuntino+Colma",
+        restroom: "Safeway Colma (Mile 2.5) & local plazas",
+        alternatives: [
+          { name: "Jo Ann's Cafe (1131 El Camino Real, SSF)", desc: "Quick takeout breakfast burritos, eggs & coffee.", phone: "+16508722810", url: "https://joannsrestaurantca.com/" },
+          { name: "Auntie Em's Fine Foods (1127 El Camino Real, SSF)", desc: "Hot Filipino chicken empanadas & cheese rolls.", phone: "+16505886068", url: "http://www.auntieemsfinefood.com/" }
+        ]
+      },
+      {
+        id: 2,
+        type: 'food',
+        mile: 10.5,
+        city: "San Bruno",
+        name: "Zorek Cafe",
+        address: "799 El Camino Real, San Bruno",
+        primaryFood: "Hot egg & bacon bagel sandwiches, pistachio berry croissants, specialty lattes.",
+        phone: "+16506364125",
+        url: "https://cafezorek.com/",
+        restroom: "Tanforan Shopping Center & San Bruno Caltrain",
+        alternatives: [
+          { name: "Rolling Pin Donuts (429 San Bruno Ave W)", desc: "Legendary 24/7 donut counter for quick sugar/carbs.", phone: "+16505899687", url: "https://www.google.com/maps/search/?api=1&query=Rolling+Pin+Donuts+San+Bruno" },
+          { name: "Camino Corner Restaurant (110 El Camino Real)", desc: "Classic diner takeout with hearty breakfast sandwiches.", phone: "+16505838782", url: "https://www.toasttab.com/camino-corner" }
+        ]
+      },
+      {
+        id: 3,
+        type: 'food',
+        mile: 15.5,
+        city: "Burlingame",
+        name: "Little Lucca Sandwich Shop",
+        address: "1809 El Camino Real, Burlingame",
+        primaryFood: "Famous giant Dutch crunch deli subs with garlic sauce. Perfect walking fuel.",
+        phone: "+16506978389",
+        url: "http://www.littlelucca.com/",
+        restroom: "Washington Park & Burlingame Library (Mile 15.0)",
+        alternatives: [
+          { name: "La Matcha Cafe (1828 El Camino Real)", desc: "Turkey pesto sandwiches, iced matcha & boba.", phone: "+16502318060", url: "http://www.lamatchacafe.com/" },
+          { name: "Sourdough & Co (101 N Rollins Rd, Millbrae)", desc: "Warm pastrami or turkey subs on sourdough.", phone: "+16502399258", url: "https://sourdoughandco.com/millbrae" }
+        ]
+      },
+      {
+        id: 4,
+        type: 'food',
+        mile: 21.5,
+        city: "San Mateo",
+        name: "S El Camino Taqueria",
+        address: "2317 S El Camino Real, San Mateo",
+        primaryFood: "Super burritos tightly wrapped in foil. High-calorie, clean handheld meal.",
+        phone: "+16503152500",
+        url: "http://orderselcaminotaqueria.com/",
+        restroom: "Central Park San Mateo & San Mateo Main Library",
+        alternatives: [
+          { name: "Palmita Cal-Mex (66 21st Ave, San Mateo)", desc: "Clean healthy wraps, grain bowls with lean proteins.", phone: "+16502004859", url: "https://eatpalmita.com/sanmateo" },
+          { name: "Taste and Glory (1208 S El Camino Real)", desc: "Breakfast wraps, croffles, and cold brew coffee.", phone: "+16503934951", url: "https://tasteandglorysanmateo.com/" }
+        ]
+      },
+      {
+        id: 5,
+        type: 'restroom',
+        mile: 25.0,
+        city: "Belmont / San Carlos",
+        name: "Midway Checkpoint (Belmont)",
+        address: "El Camino Real & Ralston Ave, Belmont",
+        primaryFood: "Halfway point (25 Miles)! Restock hydration & electrolytes.",
+        phone: null,
+        url: null,
+        restroom: "Safeway Belmont & Belmont Library on Ralston",
+        alternatives: [
+          { name: "Tacos El Grullense C&D #4 (575 Ralston Ave)", desc: "Fast super burritos and tacos right at ECR intersection.", phone: "+16502578575", url: "https://tacoselgrullense.net/tacos-el-grullense-c%26d-%234" },
+          { name: "Belmont Deli (932 Ralston Ave)", desc: "Handcrafted paninis and sandwiches to go.", phone: "+16508321136", url: "http://www.belmontdelico.com/" }
+        ]
+      },
+      {
+        id: 6,
+        type: 'food',
+        mile: 29.5,
+        city: "Redwood City",
+        name: "Los Carnalitos Taco Truck",
+        address: "2907 El Camino Real, Redwood City",
+        primaryFood: "Mexico City street food truck: super carnitas/al pastor burritos & quesadillas.",
+        phone: "+16503155090",
+        url: "https://loscarnalitos.com/",
+        restroom: "Sequoia Station (Safeway / Caltrain station)",
+        alternatives: [
+          { name: "Cuco's Burritos (2855 Middlefield Rd)", desc: "High-rated toasted flour tortilla burritos.", phone: "+16503623474", url: "https://cucosburritos.com/" },
+          { name: "Subway at Sequoia Station (1051 El Camino Real)", desc: "Reliable fast sub sandwiches & water.", phone: "+16503681400", url: "https://subway.com" }
+        ]
+      },
+      {
+        id: 7,
+        type: 'food',
+        mile: 32.5,
+        city: "Menlo Park",
+        name: "Mami Cheli's",
+        address: "991 El Camino Real, Menlo Park",
+        primaryFood: "Quick-order burritos, vegan options, fresh salsas on warm tortillas.",
+        phone: "+16505210636",
+        url: "https://mamichelis.com/",
+        restroom: "Burgess Park & Menlo Park Civic Center Library",
+        alternatives: [
+          { name: "Fresh y más (1235 O'Brien Dr)", desc: "Fresh made-to-order sandwiches and salads.", phone: "+16504447795", url: "https://www.google.com/maps/search/?api=1&query=Fresh+y+mas+Menlo+Park" }
+        ]
+      },
+      {
+        id: 8,
+        type: 'food',
+        mile: 36.0,
+        city: "Palo Alto",
+        name: "Driftwood Deli & Market",
+        address: "3450 El Camino Real, Palo Alto",
+        primaryFood: "Substantial deli sandwiches on soft rolls + convenience market to restock cold drinks.",
+        phone: "+16504934162",
+        url: "http://www.driftwooddeliandmarket.com/",
+        restroom: "Town & Country Village (Mile 34.0) & California Ave District",
+        alternatives: [
+          { name: "Gott's Roadside at Town & Country (855 El Camino Real)", desc: "Burgers, chicken sandwiches, fries & shakes.", phone: "+16503261000", url: "http://gotts.com/" },
+          { name: "Palmetto Superfoods (855 El Camino Real)", desc: "Refreshing açaí bowls & nutrient smoothies (easy to drink on the move).", phone: "+14152340913", url: "http://www.palmettosuperfoods.com/" },
+          { name: "LuLu's Town & Country (855 El Camino Real)", desc: "Fast Mexican burritos and tacos.", phone: "+16503278226", url: "http://www.lulusmexicanfood.com/" }
+        ]
+      },
+      {
+        id: 9,
+        type: 'food',
+        mile: 41.5,
+        city: "Mountain View",
+        name: "Cheztakos Food Truck",
+        address: "239 W El Camino Real, Mountain View",
+        primaryFood: "Hot curbside super burritos, quesadillas, and tacos right on the avenue.",
+        phone: "+14088412191",
+        url: "https://cheztakos.com/",
+        restroom: "Pioneer Park & Mountain View Library (Castro St)",
+        alternatives: [
+          { name: "La Familia Taqueria (1288 W El Camino Real)", desc: "Clean food truck with rapid prep carnitas burritos.", phone: "+16509605790", url: "https://www.google.com/maps/search/?api=1&query=La+Familia+Taqueria+Mountain+View" },
+          { name: "In-N-Out Burger (53 W El Camino Real)", desc: "Quick double-double burgers, fries, and shakes.", phone: "+18007861000", url: "https://locations.in-n-out.com/152" }
+        ]
+      },
+      {
+        id: 10,
+        type: 'food',
+        mile: 44.5,
+        city: "Sunnyvale",
+        name: "Xiaoman Riceburrito",
+        address: "573 E El Camino Real, Sunnyvale",
+        primaryFood: "Taiwanese fan tuan (cylindrical sticky rice rolls with crullers & pork floss). Cleanest handheld.",
+        phone: "+16692916167",
+        url: "http://riceburrito.com/",
+        restroom: "Sunnyvale Town Center & Safeway Sunnyvale",
+        alternatives: [
+          { name: "Bag O' Crab (108 E El Camino Real)", desc: "Quick hot seafood bites and sides.", phone: "+14082124710", url: "https://www.bagocrabusa.com/menu/" }
+        ]
+      },
+      {
+        id: 11,
+        type: 'food',
+        mile: 48.5,
+        city: "Santa Clara",
+        name: "Nick the Greek (Finish Line)",
+        address: "2002 El Camino Real, Santa Clara",
+        primaryFood: "Finish line feast: Greek souvlaki gyro pita wraps and hot seasoned fries.",
+        phone: "+14083201083",
+        url: "http://www.nickthegreeksj.com/",
+        restroom: "Santa Clara Town Centre (Target / Safeway)",
+        alternatives: [
+          { name: "Hankook Supermarket K-Deli (1092 E El Camino Real)", desc: "Korean seaweed gimbap rolls & fried chicken bites.", phone: "+14082440880", url: "https://www.google.com/maps/search/?api=1&query=Hankook+Supermarket+Sunnyvale" },
+          { name: "Habit Burger & Grill (2000 El Camino Real)", desc: "Charburgers, crispy chicken, and shakes.", phone: "+14082442856", url: "https://order.habitburger.com/store/84/category" }
+        ]
+      }
     ];
 
-    let isTracking = false;
-    let watchId = null;
-    let startTime = null;
-    let lastPosition = null;
-    let totalDistanceMiles = 0.0;
-    let currentSpeedMph = 3.0;
-    let speeds = [];
+    // Caltrain Stations along the route with relative milepost on ECR
+    const CALTRAIN_STATIONS = [
+      { name: "San Bruno Caltrain", mile: 10.0, distFromECR: "0.2 mi east (San Mateo Ave)" },
+      { name: "Millbrae Caltrain / BART", mile: 13.0, distFromECR: "0.3 mi east (California Dr)" },
+      { name: "Broadway (Burlingame)", mile: 14.5, distFromECR: "0.2 mi east" },
+      { name: "Burlingame Caltrain", mile: 16.5, distFromECR: "0.3 mi east (Burlingame Ave)" },
+      { name: "San Mateo Caltrain", mile: 19.5, distFromECR: "0.2 mi east (Transit Center)" },
+      { name: "Hayward Park", mile: 21.0, distFromECR: "0.4 mi east" },
+      { name: "Hillsdale Caltrain", mile: 22.5, distFromECR: "0.2 mi east" },
+      { name: "Belmont Caltrain", mile: 25.0, distFromECR: "0.1 mi east (Ralston Ave)" },
+      { name: "San Carlos Caltrain", mile: 27.0, distFromECR: "0.2 mi east" },
+      { name: "Redwood City Caltrain", mile: 29.5, distFromECR: "0.1 mi east (Sequoia Station)" },
+      { name: "Menlo Park Caltrain", mile: 32.5, distFromECR: "0.2 mi east (Santa Cruz Ave)" },
+      { name: "Palo Alto Caltrain (University Ave)", mile: 34.0, distFromECR: "0.3 mi east" },
+      { name: "California Ave Caltrain", mile: 35.5, distFromECR: "0.2 mi east" },
+      { name: "San Antonio Caltrain", mile: 38.5, distFromECR: "0.4 mi east" },
+      { name: "Mountain View Caltrain / VTA", mile: 41.5, distFromECR: "0.3 mi east (Castro St)" },
+      { name: "Sunnyvale Caltrain", mile: 44.5, distFromECR: "0.5 mi east (Frances St)" },
+      { name: "Lawrence Caltrain", mile: 46.5, distFromECR: "0.8 mi east" },
+      { name: "Santa Clara Caltrain", mile: 49.0, distFromECR: "0.1 mi east (Franklin St)" }
+    ];
 
-    let waterCountdown = 15 * 60;
-    let foodCountdown = 45 * 60;
-    let intervalTimer = null;
+    // Foot check intervals in miles
+    const FOOT_CHECK_MILES = [15.0, 25.0, 35.0];
 
-    function renderStops() {
-      const container = document.getElementById('stops-container');
-      container.innerHTML = STOPS.map(s => {
-        const remaining = (s.mile - totalDistanceMiles).toFixed(1);
-        const passed = totalDistanceMiles >= s.mile;
-        return `
-          <div class="stop-item" style="${passed ? 'opacity:0.4;' : ''}">
-            <div class="stop-header">
-              <span class="stop-name">${s.name} (${s.town})</span>
-              <span class="stop-mile">${passed ? 'Passed' : remaining + ' mi away'}</span>
-            </div>
-            <div class="stop-tag">🌱 ${s.veg}</div>
-            <div class="stop-hours">🕒 ${s.hours} • Mile marker ${s.mile}</div>
-          </div>
-        `;
-      }).join('');
+    // State
+    let state = {
+      isWalking: false,
+      startTimestamp: null,
+      paceMph: 3.2,
+      soundEnabled: true,
+      wakeLockEnabled: false,
+      amoledMode: false,
+      gpsEnabled: false,
+      gpsDistance: 0,
+      lastGpsPos: null,
+      lastWaterTimestamp: null,
+      lastFuelTimestamp: null,
+      waterIntervalMins: 30,
+      fuelIntervalMins: 60,
+      waterCount: 0,
+      electrolyteCount: 0,
+      fuelCount: 0,
+      completedStops: {},
+      alertedStops: {},
+      footChecksAlerted: {}
+    };
+
+    let wakeLockSentinel = null;
+    let audioCtx = null;
+    let currentFilter = 'all';
+    let gpsWatchId = null;
+
+    function loadState() {
+      const saved = localStorage.getItem('el_camino_50k_full_state');
+      if (saved) {
+        try {
+          state = { ...state, ...JSON.parse(saved) };
+        } catch (e) { console.error(e); }
+      }
     }
 
-    function toggleTrek() {
-      if (!isTracking) {
-        startTrek();
+    function saveState() {
+      localStorage.setItem('el_camino_50k_full_state', JSON.stringify(state));
+    }
+
+    // --- Audio Synthesizer (Web Audio API) ---
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, startTime, duration) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      gain.gain.setValueAtTime(0.28, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    }
+
+    function playChime(type) {
+      if (!state.soundEnabled) return;
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        if (type === 'water') {
+          playTone(587.33, now, 0.15); // D5
+          playTone(880.00, now + 0.15, 0.3); // A5
+        } else if (type === 'electrolyte') {
+          playTone(659.25, now, 0.12); // E5
+          playTone(987.77, now + 0.14, 0.35); // B5
+        } else if (type === 'fuel') {
+          playTone(523.25, now, 0.12);
+          playTone(659.25, now + 0.12, 0.12);
+          playTone(783.99, now + 0.24, 0.35);
+        } else if (type === 'order' || type === 'foot' || type === 'dusk') {
+          playTone(659.25, now, 0.1);
+          playTone(880.00, now + 0.12, 0.1);
+          playTone(1046.50, now + 0.24, 0.45);
+        } else {
+          playTone(440, now, 0.2);
+        }
+      } catch (err) {
+        console.warn("Audio chime failed:", err);
+      }
+    }
+
+    function testChime() {
+      initAudio();
+      playChime('order');
+      if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+    }
+
+    // --- In-App Alert System ---
+    function triggerAlert(title, message, type, primaryText, onPrimary) {
+      const banner = document.getElementById('alertBanner');
+      document.getElementById('alertTitle').innerHTML = title;
+      document.getElementById('alertMessage').innerText = message;
+      const primaryBtn = document.getElementById('alertPrimaryBtn');
+      primaryBtn.innerText = primaryText || "Acknowledge";
+      primaryBtn.onclick = () => {
+        if (onPrimary) onPrimary();
+        dismissAlert();
+      };
+      banner.style.display = 'block';
+      playChime(type);
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+
+    function dismissAlert() {
+      document.getElementById('alertBanner').style.display = 'none';
+    }
+
+    function snoozeAlert(mins) {
+      dismissAlert();
+      setTimeout(() => {
+        triggerAlert("⏰ Snoozed Reminder", "Time to hydrate or fuel up!", "water");
+      }, mins * 60 * 1000);
+    }
+
+    // --- Screen Wake Lock ---
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+          state.wakeLockEnabled = true;
+          updateWakeLockUI(true);
+          wakeLockSentinel.addEventListener('release', () => {
+            if (state.wakeLockEnabled) updateWakeLockUI(false);
+          });
+        } catch (err) {
+          console.warn("Wake Lock request failed", err);
+          state.wakeLockEnabled = false;
+          updateWakeLockUI(false);
+        }
       } else {
-        stopTrek();
+        alert("Screen Wake Lock API not supported on this browser.");
+      }
+      saveState();
+    }
+
+    function releaseWakeLock() {
+      if (wakeLockSentinel) {
+        wakeLockSentinel.release();
+        wakeLockSentinel = null;
+      }
+      state.wakeLockEnabled = false;
+      updateWakeLockUI(false);
+      saveState();
+    }
+
+    function toggleWakeLock() {
+      if (state.wakeLockEnabled) releaseWakeLock();
+      else requestWakeLock();
+    }
+
+    function updateWakeLockUI(active) {
+      const btn = document.getElementById('wakeLockBtn');
+      if (active) {
+        btn.classList.add('active');
+        btn.innerHTML = "💡 Screen Wake: ON";
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = "💡 Screen Wake: OFF";
       }
     }
 
-    function startTrek() {
-      isTracking = true;
-      startTime = Date.now();
-      document.getElementById('toggle-btn').innerText = "Pause / Stop Trek";
-      document.getElementById('toggle-btn').classList.add('btn-stop');
-      document.getElementById('gps-badge').classList.add('active');
-      document.getElementById('gps-badge').innerText = "GPS Tracking";
-
-      if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(handlePosition, handleError, {
-          enableHighAccuracy: true,
-          maximumAge: 5000,
-          timeout: 10000
-        });
+    // --- AMOLED Mode ---
+    function toggleAmoled() {
+      state.amoledMode = !state.amoledMode;
+      const btn = document.getElementById('amoledBtn');
+      if (state.amoledMode) {
+        document.body.classList.add('amoled-mode');
+        btn.classList.add('active');
+        btn.innerHTML = "🔋 OLED Dark: ON";
+      } else {
+        document.body.classList.remove('amoled-mode');
+        btn.classList.remove('active');
+        btn.innerHTML = "🔋 OLED Dark: OFF";
       }
-
-      intervalTimer = setInterval(tick, 1000);
-      renderStops();
+      saveState();
     }
 
-    function stopTrek() {
-      isTracking = false;
-      if (watchId) navigator.geolocation.clearWatch(watchId);
-      clearInterval(intervalTimer);
-      document.getElementById('toggle-btn').innerText = "Resume Walk";
-      document.getElementById('toggle-btn').classList.remove('btn-stop');
-      document.getElementById('gps-badge').classList.remove('active');
-      document.getElementById('gps-badge').innerText = "Paused";
+    // --- Sound Toggle ---
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      const btn = document.getElementById('soundBtn');
+      if (state.soundEnabled) {
+        btn.classList.add('active');
+        btn.innerHTML = "🔊 Chimes: ON";
+        initAudio();
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = "🔇 Chimes: OFF";
+      }
+      saveState();
     }
 
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 3958.8; // Radius in miles
+    // --- GPS Tracking ---
+    function toggleGps() {
+      state.gpsEnabled = !state.gpsEnabled;
+      const btn = document.getElementById('gpsBtn');
+      if (state.gpsEnabled) {
+        if ('geolocation' in navigator) {
+          btn.classList.add('active');
+          btn.innerHTML = "🛰️ GPS: Active";
+          gpsWatchId = navigator.geolocation.watchPosition(
+            (pos) => {
+              const { latitude, longitude } = pos.coords;
+              if (state.lastGpsPos) {
+                const dist = haversineMiles(state.lastGpsPos.lat, state.lastGpsPos.lng, latitude, longitude);
+                if (dist > 0.005 && dist < 0.2) { // filter noise & teleporting
+                  state.gpsDistance += dist;
+                  saveState();
+                }
+              }
+              state.lastGpsPos = { lat: latitude, lng: longitude };
+            },
+            (err) => {
+              console.warn("GPS error", err);
+              btn.innerHTML = "🛰️ GPS: Error";
+            },
+            { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+          );
+        } else {
+          alert("Geolocation not supported.");
+          state.gpsEnabled = false;
+        }
+      } else {
+        if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+        btn.classList.remove('active');
+        btn.innerHTML = "🛰️ GPS: OFF";
+      }
+      saveState();
+    }
+
+    function haversineMiles(lat1, lon1, lat2, lon2) {
+      const R = 3958.8; // Radius of Earth in miles
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       return R * c;
     }
 
-    function handlePosition(pos) {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
+    // --- Walk Pacing & Timing ---
+    function startWalk() {
+      initAudio();
+      state.isWalking = true;
+      state.startTimestamp = Date.now(); // Check exact live start time
+      state.lastWaterTimestamp = Date.now();
+      state.lastFuelTimestamp = Date.now();
+      saveState();
+      renderApp();
+      playChime('fuel');
+      if (state.wakeLockEnabled) requestWakeLock();
+    }
 
-      if (lastPosition) {
-        const delta = calculateDistance(lastPosition.lat, lastPosition.lng, lat, lng);
-        if (delta > 0.005 && delta < 0.2) { // filter GPS jitter and jumps
-          totalDistanceMiles += delta;
-        }
+    function startWalkManual() {
+      const input = document.getElementById('manualStartTimeInput').value;
+      if (!input) return alert("Select a start time.");
+      const [h, m] = input.split(':').map(Number);
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      state.isWalking = true;
+      state.startTimestamp = d.getTime();
+      state.lastWaterTimestamp = Date.now();
+      state.lastFuelTimestamp = Date.now();
+      saveState();
+      renderApp();
+      playChime('fuel');
+    }
+
+    function resetWalk() {
+      if (confirm("Reset walk tracker, clear log counters and ETAs?")) {
+        state.isWalking = false;
+        state.startTimestamp = null;
+        state.completedStops = {};
+        state.alertedStops = {};
+        state.footChecksAlerted = {};
+        state.waterCount = 0;
+        state.electrolyteCount = 0;
+        state.fuelCount = 0;
+        state.gpsDistance = 0;
+        state.lastGpsPos = null;
+        saveState();
+        renderApp();
       }
-      lastPosition = { lat, lng };
+    }
 
-      if (pos.coords.speed !== null && pos.coords.speed > 0) {
-        const mph = pos.coords.speed * 2.23694;
-        speeds.push(mph);
-        if (speeds.length > 5) speeds.shift();
-        currentSpeedMph = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+    function changePace(val) {
+      state.paceMph = parseFloat(val);
+      document.getElementById('paceDisplay').innerText = state.paceMph.toFixed(1) + " mph";
+      saveState();
+      renderStops();
+      updateTransitCard();
+    }
+
+    // --- Logging ---
+    function logWater() {
+      state.waterCount++;
+      state.lastWaterTimestamp = Date.now();
+      checkHyponatremia();
+      saveState();
+      dismissAlert();
+      document.getElementById('waterCount').innerText = state.waterCount;
+      playChime('water');
+    }
+
+    function logElectrolyte() {
+      state.electrolyteCount++;
+      checkHyponatremia();
+      saveState();
+      dismissAlert();
+      document.getElementById('electrolyteCount').innerText = state.electrolyteCount;
+      document.getElementById('electrolyteVal').innerText = state.electrolyteCount + " pkts";
+      playChime('electrolyte');
+    }
+
+    function logFuel() {
+      state.fuelCount++;
+      state.lastFuelTimestamp = Date.now();
+      saveState();
+      dismissAlert();
+      document.getElementById('fuelCount').innerText = state.fuelCount;
+      playChime('fuel');
+    }
+
+    function checkHyponatremia() {
+      const warningEl = document.getElementById('hyponatremiaWarning');
+      // If 3 waters with 0 electrolytes, or water exceeds electrolytes by more than 4
+      if (state.waterCount >= 3 && state.electrolyteCount === 0 || (state.waterCount - state.electrolyteCount * 2) >= 4) {
+        warningEl.style.display = 'flex';
+      } else {
+        warningEl.style.display = 'none';
+      }
+    }
+
+    // --- 1-Tap Check-In Share ---
+    function shareCheckin() {
+      const elapsedMs = state.isWalking && state.startTimestamp ? Date.now() - state.startTimestamp : 0;
+      const elapsedHours = elapsedMs / 3600000;
+      const currentMiles = Math.min(48.5, elapsedHours * state.paceMph);
+      
+      // Determine nearest town
+      let currentCity = "San Francisco";
+      for (let s of STOPS_DATA) {
+        if (currentMiles >= s.mile) currentCity = s.city;
       }
 
-      updateUI();
-    }
+      const text = `🚶 El Camino 50K Check-in: Currently at Mile ${currentMiles.toFixed(1)} near ${currentCity}. Elapsed: ${formatDuration(elapsedMs)}. Target pace: ${state.paceMph.toFixed(1)} mph. Feeling good!`;
 
-    function handleError(err) {
-      console.warn("GPS Warning:", err.message);
-      document.getElementById('gps-badge').innerText = "GPS Searching";
-    }
+      if (navigator.share) {
+        navigator.share({ title: 'Walk Check-In', text: text }).catch(e => console.log(e));
+      } else {
+        navigator.clipboard.writeText(text).then(() => {
+          alert("Check-in copied to clipboard! Paste into messages:
 
-    function tick() {
-      // Countdown timers
-      if (waterCountdown > 0) waterCountdown--;
-      else waterCountdown = 15 * 60;
-
-      if (foodCountdown > 0) foodCountdown--;
-      else foodCountdown = 45 * 60;
-
-      updateTimers();
-      updateUI();
-    }
-
-    function formatMinSec(sec) {
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
-
-    function updateTimers() {
-      document.getElementById('timer-water').innerText = formatMinSec(waterCountdown);
-      document.getElementById('timer-food').innerText = formatMinSec(foodCountdown);
-
-      const nextRestMile = Math.ceil((totalDistanceMiles + 0.1) / 10) * 10;
-      const distToRest = Math.max(0, (nextRestMile - totalDistanceMiles)).toFixed(1);
-      document.getElementById('timer-rest').innerText = `${distToRest} mi away`;
-    }
-
-    function updateUI() {
-      const progressPct = Math.min(100, (totalDistanceMiles / TOTAL_ROUTE_MILES) * 100);
-      document.getElementById('progress-bar').style.width = `${progressPct}%`;
-      document.getElementById('pct-display').innerText = `${progressPct.toFixed(1)}%`;
-      document.getElementById('dist-covered').innerText = `${totalDistanceMiles.toFixed(2)} mi completed`;
-      document.getElementById('dist-remaining').innerText = `${Math.max(0, TOTAL_ROUTE_MILES - totalDistanceMiles).toFixed(1)} mi remaining`;
-
-      document.getElementById('speed-val').innerHTML = `${currentSpeedMph.toFixed(1)} <span style="font-size:1rem; font-weight:400;">mph</span>`;
-
-      // Elapsed Time
-      if (startTime) {
-        const elapsedMs = Date.now() - startTime;
-        const hrs = Math.floor(elapsedMs / 3600000);
-        const mins = Math.floor((elapsedMs % 3600000) / 60000);
-        document.getElementById('elapsed-time').innerText = `Elapsed: ${hrs}h ${mins}m`;
-
-        // Projected ETA
-        const remainingMiles = Math.max(0, TOTAL_ROUTE_MILES - totalDistanceMiles);
-        const speed = currentSpeedMph > 0.5 ? currentSpeedMph : 2.8;
-        const hoursRemaining = remainingMiles / speed;
-        const etaDate = new Date(Date.now() + hoursRemaining * 3600000);
-        document.getElementById('eta-val').innerText = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+" + text);
+        }).catch(() => {
+          window.location.href = `sms:?body=${encodeURIComponent(text)}`;
+        });
       }
+    }
 
+    // --- Timeline Filters & Alternatives ---
+    function filterTimeline(type, el) {
+      currentFilter = type;
+      document.querySelectorAll('.tab-pill').forEach(btn => btn.classList.remove('active'));
+      el.classList.add('active');
       renderStops();
     }
 
-    renderStops();
+    function toggleAlternatives(stopId) {
+      const el = document.getElementById(`alts-${stopId}`);
+      if (el) {
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+      }
+    }
 
-    // Register basic service worker for PWA installability
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        self.addEventListener('install', e => self.skipWaiting());
-        self.addEventListener('activate', e => self.clients.claim());
-        self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Offline'))));
+    function toggleStopCompleted(id) {
+      state.completedStops[id] = !state.completedStops[id];
+      saveState();
+      renderStops();
+      updateTransitCard();
+    }
+
+    // --- Helpers ---
+    function formatTimeShort(d) {
+      let h = d.getHours();
+      let m = d.getMinutes();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${m < 10 ? '0' + m : m} ${ampm}`;
+    }
+
+    function formatTimeWithSec(d) {
+      let h = d.getHours();
+      let m = d.getMinutes();
+      let s = d.getSeconds();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s} ${ampm}`;
+    }
+
+    function formatDuration(ms) {
+      if (ms < 0) ms = 0;
+      const totalSec = Math.floor(ms / 1000);
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function formatCountdown(secRemaining) {
+      if (secRemaining <= 0) return "00:00";
+      const m = Math.floor(secRemaining / 60);
+      const s = Math.floor(secRemaining % 60);
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // --- Render App UI ---
+    function renderApp() {
+      const notStarted = document.getElementById('notStartedView');
+      const activeWalk = document.getElementById('activeWalkView');
+
+      if (state.isWalking && state.startTimestamp) {
+        notStarted.style.display = 'none';
+        activeWalk.style.display = 'block';
+        const startDate = new Date(state.startTimestamp);
+        document.getElementById('walkStartDisplay').innerText = "Started: " + formatTimeShort(startDate);
+        
+        // Est finish
+        const totalHours = 48.5 / state.paceMph;
+        const finishDate = new Date(state.startTimestamp + totalHours * 3600000);
+        document.getElementById('finishDisplay').innerText = formatTimeShort(finishDate);
+      } else {
+        notStarted.style.display = 'block';
+        activeWalk.style.display = 'none';
+        document.getElementById('finishDisplay').innerText = "--:--";
+      }
+
+      document.getElementById('paceSelect').value = state.paceMph.toString();
+      document.getElementById('paceDisplay').innerText = state.paceMph.toFixed(1) + " mph";
+      document.getElementById('waterCount').innerText = state.waterCount;
+      document.getElementById('electrolyteCount').innerText = state.electrolyteCount;
+      document.getElementById('electrolyteVal').innerText = state.electrolyteCount + " pkts";
+      document.getElementById('fuelCount').innerText = state.fuelCount;
+
+      updateWakeLockUI(state.wakeLockEnabled);
+      if (state.amoledMode) document.body.classList.add('amoled-mode');
+      checkHyponatremia();
+      renderStops();
+      updateTransitCard();
+    }
+
+    // --- Transit Navigator Logic ---
+    function updateTransitCard() {
+      const elapsedMs = state.isWalking && state.startTimestamp ? Date.now() - state.startTimestamp : 0;
+      const currentMiles = state.gpsEnabled && state.gpsDistance > 0 ? state.gpsDistance : (elapsedMs / 3600000) * state.paceMph;
+      
+      const routeText = currentMiles <= 34.5 ? "Bus: SamTrans ECR (24/7 along ECR)" : "Bus: VTA 22 / Rapid 522 (every 12m along ECR)";
+      document.getElementById('activeBusRoute').innerText = routeText;
+
+      // Find nearest Caltrain station
+      let closestStation = CALTRAIN_STATIONS[0];
+      let minDiff = 999;
+      CALTRAIN_STATIONS.forEach(st => {
+        const diff = Math.abs(st.mile - currentMiles);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestStation = st;
+        }
+      });
+
+      const distDiff = (closestStation.mile - currentMiles);
+      const aheadOrBehind = distDiff >= 0 ? `${distDiff.toFixed(1)} mi ahead` : `${Math.abs(distDiff).toFixed(1)} mi behind`;
+
+      const infoHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <strong>🚉 Nearest Station: ${closestStation.name}</strong>
+          <span style="color: #c084fc; font-weight: 700;">${aheadOrBehind}</span>
+        </div>
+        <div>📍 Offset from El Camino: ${closestStation.distFromECR}</div>
+        <div style="margin-top: 6px; display: flex; gap: 8px;">
+          <a href="https://www.caltrain.com/schedules" target="_blank" rel="noopener" class="btn-link" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe;">Caltrain Live Schedule</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(closestStation.name)}" target="_blank" rel="noopener" class="btn-link" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe;">Directions to Station</a>
+        </div>
       `;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+      document.getElementById('bailoutInfo').innerHTML = infoHtml;
+    }
+
+    // --- Render Checkpoints Timeline ---
+    function renderStops() {
+      const container = document.getElementById('stopsContainer');
+      container.innerHTML = '';
+
+      let completedCount = 0;
+      const elapsedHours = state.isWalking && state.startTimestamp ? (Date.now() - state.startTimestamp) / 3600000 : 0;
+      const currentMiles = state.gpsEnabled && state.gpsDistance > 0 ? state.gpsDistance : elapsedHours * state.paceMph;
+
+      STOPS_DATA.forEach((stop) => {
+        if (currentFilter === 'food' && stop.type !== 'food') return;
+        if (currentFilter === 'restroom' && !stop.restroom) return;
+
+        const isCompleted = !!state.completedStops[stop.id];
+        if (isCompleted) completedCount++;
+
+        let etaText = "ETA: TBD";
+        let isNear = false;
+
+        if (state.isWalking && state.startTimestamp) {
+          const hoursToReach = stop.mile / state.paceMph;
+          const etaDate = new Date(state.startTimestamp + hoursToReach * 3600000);
+          etaText = `ETA: ${formatTimeShort(etaDate)}`;
+
+          const minutesUntil = (etaDate.getTime() - Date.now()) / 60000;
+          if (minutesUntil > 0 && minutesUntil <= 20 && !isCompleted && stop.type === 'food') {
+            isNear = true;
+            if (!state.alertedStops[stop.id] && stop.phone) {
+              state.alertedStops[stop.id] = true;
+              saveState();
+              triggerAlert(
+                `🥡 Order Ahead: ${stop.name}`,
+                `You are ~${Math.round(minutesUntil)}m out from ${stop.name} in ${stop.city}. Tap to place your pickup order now!`,
+                'order',
+                'Call to Order',
+                () => { window.location.href = `tel:${stop.phone}`; }
+              );
+            }
+          }
+        }
+
+        const item = document.createElement('div');
+        item.className = `stop-item ${isCompleted ? 'completed' : ''} ${isNear ? 'near' : ''} ${stop.type === 'restroom' ? 'restroom-type' : ''}`;
+
+        let altsHtml = '';
+        if (stop.alternatives && stop.alternatives.length > 0) {
+          altsHtml = `
+            <button class="alt-toggle-btn" onclick="toggleAlternatives(${stop.id})">
+              <span>▾ ${stop.alternatives.length} Alternative Grab & Go Spots</span>
+            </button>
+            <div id="alts-${stop.id}" class="alternatives-container">
+              ${stop.alternatives.map(a => `
+                <div class="alt-item">
+                  <div class="alt-name">
+                    <span>${a.name}</span>
+                    <div>
+                      ${a.phone ? `<a href="tel:${a.phone}" style="color: #93c5fd; text-decoration: none; margin-right: 6px;">📞</a>` : ''}
+                      ${a.url ? `<a href="${a.url}" target="_blank" rel="noopener" style="color: #93c5fd; text-decoration: none;">🌐</a>` : ''}
+                    </div>
+                  </div>
+                  <div class="alt-desc">${a.desc}</div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        item.innerHTML = `
+          <div class="stop-node"></div>
+          <div class="stop-content">
+            <div class="stop-header">
+              <span class="stop-name">${stop.name}</span>
+              <span class="stop-mile">Mile ${stop.mile.toFixed(1)}</span>
+            </div>
+            <div class="stop-eta">${etaText} • ${stop.city}</div>
+            <div class="stop-addr">📍 ${stop.address}</div>
+            
+            <div class="stop-primary-food">🍴 ${stop.primaryFood}</div>
+            ${altsHtml}
+            
+            ${stop.restroom ? `<div style="font-size: 0.72rem; color: #38bdf8; margin-bottom: 6px;">🚻 Restroom: ${stop.restroom}</div>` : ''}
+
+            <div class="stop-actions">
+              ${isNear ? '<span class="badge-order">⚡ Order Ahead Now</span>' : ''}
+              ${stop.phone ? `<a href="tel:${stop.phone}" class="btn-link">📞 Call</a>` : ''}
+              ${stop.url ? `<a href="${stop.url}" target="_blank" rel="noopener" class="btn-link">🌐 Menu / Web</a>` : ''}
+              <button class="stop-check-btn ${isCompleted ? 'checked' : ''}" onclick="toggleStopCompleted(${stop.id})">
+                ${isCompleted ? '✓ Reached' : 'Mark Reached'}
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      document.getElementById('stopsProgress').innerText = `${completedCount}/${STOPS_DATA.length} Reached`;
+    }
+
+    // --- Footcare Alerts Check ---
+    function checkFootChecks(currentMiles) {
+      FOOT_CHECK_MILES.forEach(mileMark => {
+        if (currentMiles >= mileMark && !state.footChecksAlerted[mileMark]) {
+          state.footChecksAlerted[mileMark] = true;
+          saveState();
+          triggerAlert(
+            `🦶 Footcare Check (Mile ${mileMark})`,
+            "Check for hot spots now! Re-apply anti-chafing balm, check lacing, or swap into dry socks to avoid blisters.",
+            'foot',
+            'Foot Check Done',
+            () => {
+              document.getElementById('footCheckStatus').innerText = `Mile ${mileMark} foot check logged!`;
+            }
+          );
+        }
+      });
+    }
+
+    // --- Sunset & Dusk Check ---
+    function checkSunset() {
+      // Estimated sunset for Bay Area on Saturday Sept 19 is 19:09 (7:09 PM)
+      const now = new Date();
+      const sunset = new Date();
+      sunset.setHours(19, 9, 0, 0);
+
+      const msToSunset = sunset.getTime() - now.getTime();
+      const indicator = document.getElementById('sunsetIndicator');
+
+      if (msToSunset > 0) {
+        const minsToSunset = Math.floor(msToSunset / 60000);
+        const hrs = Math.floor(minsToSunset / 60);
+        const m = minsToSunset % 60;
+        indicator.innerText = `🌅 Sunset: 7:09 PM (in ${hrs}h ${m}m)`;
+
+        // Dusk alert 30 mins before sunset
+        if (minsToSunset <= 30 && minsToSunset >= 0 && state.isWalking && !state.duskAlerted) {
+          state.duskAlerted = true;
+          saveState();
+          triggerAlert(
+            "🌙 Dusk Approaching",
+            "Sunset in 30 mins. Put on your reflective gear, turn on clip-on lights/headlamp, and watch for cars at driveway crossings.",
+            'dusk',
+            'Lights On'
+          );
+        }
+      } else {
+        indicator.innerText = "🌙 Night Walking Mode";
+      }
+    }
+
+    // --- Main Clock & Timer Loop ---
+    let tickCount = 0;
+    setInterval(() => {
+      tickCount++;
+      const now = new Date();
+      document.getElementById('liveClock').innerText = formatTimeWithSec(now);
+
+      if (tickCount % 60 === 0) checkSunset();
+
+      if (!state.isWalking || !state.startTimestamp) return;
+
+      const nowMs = now.getTime();
+      const elapsedMs = nowMs - state.startTimestamp;
+      document.getElementById('elapsedDisplay').innerText = formatDuration(elapsedMs);
+
+      // Distance
+      const elapsedHours = elapsedMs / 3600000;
+      const estimatedMiles = Math.min(48.5, elapsedHours * state.paceMph);
+      const displayMiles = state.gpsEnabled && state.gpsDistance > 0 ? state.gpsDistance : estimatedMiles;
+      document.getElementById('distanceDisplay').innerText = displayMiles.toFixed(1) + " mi";
+
+      // Water Countdown
+      if (state.lastWaterTimestamp) {
+        const waterElapsedSec = Math.floor((nowMs - state.lastWaterTimestamp) / 1000);
+        const waterRemainingSec = (state.waterIntervalMins * 60) - waterElapsedSec;
+        document.getElementById('waterCountdown').innerText = formatCountdown(waterRemainingSec);
+
+        if (waterRemainingSec <= 0) {
+          triggerAlert(
+            "💧 Hydration Break!",
+            "Take 3-4 deep sips of water or electrolytes to stay on pace.",
+            "water",
+            "Drank Water",
+            logWater
+          );
+        }
+      }
+
+      // Fuel Countdown
+      if (state.lastFuelTimestamp) {
+        const fuelElapsedSec = Math.floor((nowMs - state.lastFuelTimestamp) / 1000);
+        const fuelRemainingSec = (state.fuelIntervalMins * 60) - fuelElapsedSec;
+        document.getElementById('fuelCountdown').innerText = formatCountdown(fuelRemainingSec);
+
+        if (fuelRemainingSec <= 0) {
+          triggerAlert(
+            "⚡ Fuel / Nutrition!",
+            "Time for a high-calorie snack (bars, chews, or a solid bite).",
+            "fuel",
+            "Had Fuel",
+            logFuel
+          );
+        }
+      }
+
+      // Foot check triggers
+      checkFootChecks(displayMiles);
+
+      // Refresh stops & transit card periodically (every 30s)
+      if (tickCount % 30 === 0) {
+        renderStops();
+        updateTransitCard();
+      }
+
+    }, 1000);
+
+    // --- Initialize ---
+    loadState();
+    renderApp();
+    checkSunset();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('SW Registered:', reg.scope))
+          .catch(err => console.log('SW Failed:', err));
+      });
     }
   </script>
 </body>
